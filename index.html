@@ -4,119 +4,72 @@
     <meta charset="utf-8">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        const list = ["glasses1", "glasses2", "hat1", "hat2", "earring"];
-        const visibles = [true, false, false, true, true];
-        
-        // Get camera setting from URL parameter or default to front
-        const urlParams = new URLSearchParams(window.location.search);
-        let currentCamera = urlParams.get('camera') || 'user';
-        
-        const setVisible = (button, entities, visible) => {
-          if (visible) {
-            button.classList.add("selected");
-          } else {
-            button.classList.remove("selected");
-          }
-          entities.forEach((entity) => {
-            entity.setAttribute("visible", visible);
-          });
-        }
-        
-        // Initialize accessory buttons
-        list.forEach((item, index) => {
-          const button = document.querySelector("#" + item);
-          const entities = document.querySelectorAll("." + item + "-entity");
+   <script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let mode = urlParams.get("mode") || "face"; // default = face
+
+    const faceScene = document.querySelector("#face-scene");
+    const imageScene = document.querySelector("#image-scene");
+    const switchBtn = document.querySelector("#camera-switch");
+
+    // Accessory logic (only for face mode)
+    if (mode === "face") {
+      const list = ["glasses1", "glasses2", "hat1", "hat2", "earring"];
+      const visibles = [true, false, false, true, true];
+      const setVisible = (button, entities, visible) => {
+        if (visible) button.classList.add("selected");
+        else button.classList.remove("selected");
+        entities.forEach((entity) => entity.setAttribute("visible", visible));
+      };
+      list.forEach((item, index) => {
+        const button = document.querySelector("#" + item);
+        const entities = document.querySelectorAll("." + item + "-entity");
+        setVisible(button, entities, visibles[index]);
+        button.addEventListener("click", () => {
+          visibles[index] = !visibles[index];
           setVisible(button, entities, visibles[index]);
-          button.addEventListener('click', () => {
-            visibles[index] = !visibles[index];
-            setVisible(button, entities, visibles[index]);
-          });
         });
-        
-        // Set up camera button
-        const cameraButton = document.querySelector("#camera-switch");
-        
-        // Update button appearance based on current camera
-        const updateCameraButton = () => {
-          cameraButton.textContent = currentCamera === 'user' ? '📷' : '🤳';
-          cameraButton.title = currentCamera === 'user' ? 'Switch to Back Camera' : 'Switch to Front Camera';
-        };
-        
-        updateCameraButton();
-        
-        // Camera switching with page reload (most reliable method)
-        const switchCamera = () => {
-          const newCamera = currentCamera === 'user' ? 'environment' : 'user';
-          
-          // Show loading state
-          cameraButton.disabled = true;
-          cameraButton.style.opacity = '0.5';
-          cameraButton.textContent = '⏳';
-          
-          // Create URL with camera parameter
-          const url = new URL(window.location.href);
-          url.searchParams.set('camera', newCamera);
-          
-          // Reload page with new camera
-          window.location.href = url.toString();
-        };
-        
-        cameraButton.addEventListener('click', switchCamera);
-        
-        // Initialize MindAR scene with correct camera
-        const scene = document.querySelector("a-scene");
-        
-        // Wait for scene to load, then set camera
-        scene.addEventListener('loaded', () => {
-          console.log('Scene loaded, setting camera to:', currentCamera);
-          scene.setAttribute('mindar-face', {
-            facingMode: currentCamera
-          });
-        });
-        
-        // Fallback: set attribute immediately
-        scene.setAttribute('mindar-face', `facingMode: ${currentCamera}`);
-        
-        // Prevent zoom on double tap (iOS Safari)
-        document.addEventListener('touchstart', function(event) {
-          if (event.touches.length > 1) {
-            event.preventDefault();
-          }
-        });
-        
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function(event) {
-          const now = (new Date()).getTime();
-          if (now - lastTouchEnd <= 300) {
-            event.preventDefault();
-          }
-          lastTouchEnd = now;
-        }, false);
-        
-        // Debug camera access
-        const checkCameraAccess = async () => {
-          try {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            console.log('Available cameras:', videoDevices.length);
-            videoDevices.forEach((device, index) => {
-              console.log(`Camera ${index + 1}:`, device.label || `Camera ${index + 1}`);
-            });
-            
-            if (videoDevices.length < 2) {
-              console.warn('Only one camera detected. Back camera switching may not work.');
-            }
-          } catch (error) {
-            console.error('Error checking camera access:', error);
-          }
-        };
-        
-        // Check camera access after permissions are granted
-        setTimeout(checkCameraAccess, 2000);
       });
-    </script>
+    } else {
+      document.querySelector(".options-panel").style.display = "none"; // hide in image mode
+    }
+
+    const updateScene = () => {
+      if (mode === "face") {
+        faceScene.style.display = "block";
+        imageScene.style.display = "none";
+        switchBtn.textContent = "📷";
+        switchBtn.title = "Switch to Image AR (Back Camera)";
+      } else {
+        faceScene.style.display = "none";
+        imageScene.style.display = "block";
+        switchBtn.textContent = "🤳";
+        switchBtn.title = "Switch to Face AR (Front Camera)";
+      }
+    };
+    updateScene();
+
+    switchBtn.addEventListener("click", () => {
+      const faceSystem = document.querySelector("#face-scene").systems["mindar-face-system"];
+      const imageSystem = document.querySelector("#image-scene").systems["mindar-image-system"];
+      
+      if (mode === "face") {
+        // Change to Image AR mode
+        mode = "image";
+        imageSystem.switchCamera();
+        faceSystem.stop(); // Stop face tracking
+      } else {
+        // Change to Face AR mode
+        mode = "face";
+        faceSystem.switchCamera();
+        imageSystem.stop(); // Stop image tracking
+      }
+      
+      updateScene();
+    });
+  });
+</script>
     <style>
       body {
         margin: 0;
@@ -202,13 +155,8 @@
         touch-action: manipulation;
       }
       
-      #camera-switch:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      
-      #camera-switch:hover:not(:disabled),
-      #camera-switch:active:not(:disabled) {
+      #camera-switch:hover,
+      #camera-switch:active {
         background: rgba(0, 0, 0, 0.9);
         transform: scale(1.1);
       }
@@ -305,6 +253,7 @@
       </div>
       
       <a-scene 
+        mindar-face="facingMode: user" 
         embedded 
         color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
