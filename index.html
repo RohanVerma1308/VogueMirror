@@ -166,8 +166,13 @@
         touch-action: manipulation;
       }
       
-      #camera-switch:hover,
-      #camera-switch:active {
+      #camera-switch:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      #camera-switch:hover:not(:disabled),
+      #camera-switch:active:not(:disabled) {
         background: rgba(0, 0, 0, 0.9);
         transform: scale(1.1);
       }
