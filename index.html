@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
     <style>
-      body {
-        margin: 0;
-      }
+      body { margin: 0; }
       .example-container {
         overflow: hidden;
         position: absolute;
@@ -21,14 +19,13 @@
         z-index: 2;
         display: flex;
         gap: 2px;
-        background: rgba(255,255,255,0.75);
+        background: rgba(255,255,255,0.8);
         padding: 4px 2px;
         border-radius: 6px;
       }
       .options-panel img {
         border: solid 2px gray;
-        width: 50px;
-        height: 50px;
+        width: 50px; height: 50px;
         object-fit: cover;
         cursor: pointer;
         background: white;
@@ -52,10 +49,8 @@
         cursor: pointer;
       }
       @media (max-width: 600px) {
-        .options-panel img,
-        #switchCamBtn {
-          width: 38px;
-          height: 38px;
+        .options-panel img, #switchCamBtn {
+          width: 38px; height: 38px;
           font-size: 13px;
           padding: 8px 10px;
         }
@@ -89,27 +84,30 @@
           <a-asset-item id="earringModel" src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/face-tracking/assets/earring/scene.gltf"></a-asset-item>
         </a-assets>
         <a-camera active="false" position="0 0 0"></a-camera>
-        <!-- head occluder -->
+        <!-- head occluder stays on brow/forehead landmark for masking -->
         <a-entity mindar-face-target="anchorIndex: 168">
           <a-gltf-model mindar-face-occluder position="0 -0.3 0.15" rotation="0 0 0" scale="0.065 0.065 0.065" src="#headModel"></a-gltf-model>
         </a-entity>
+        <!-- Hat on forehead -->
         <a-entity mindar-face-target="anchorIndex: 10">
-          <a-gltf-model rotation="0 -0 0" position="0 1.0 -0.5" scale="0.35 0.35 0.35" src="#hatModel" class="hat1-entity" visible="false"></a-gltf-model>
+          <a-gltf-model position="0 0.23 0.02" scale="0.33 0.33 0.33" src="#hatModel" class="hat1-entity" visible="false"></a-gltf-model>
         </a-entity>
         <a-entity mindar-face-target="anchorIndex: 10">
-          <a-gltf-model rotation="0 -0 0" position="0 -0.2 -0.5" scale="0.008 0.008 0.008" src="#hatModel2" class="hat2-entity" visible="false"></a-gltf-model>
+          <a-gltf-model position="0 0.19 0.03" scale="0.02 0.02 0.02" src="#hatModel2" class="hat2-entity" visible="false"></a-gltf-model>
         </a-entity>
-        <a-entity mindar-face-target="anchorIndex: 168">
-          <a-gltf-model rotation="0 -0 0" position="0 0 0" scale="0.01 0.01 0.01" src="#glassesModel" class="glasses1-entity" visible="false"></a-gltf-model>
+        <!-- Glasses tracked at the nose tip -->
+        <a-entity mindar-face-target="anchorIndex: 1">
+          <a-gltf-model position="0 0 0.03" scale="0.012 0.012 0.012" src="#glassesModel" class="glasses1-entity" visible="false"></a-gltf-model>
         </a-entity>
-        <a-entity mindar-face-target="anchorIndex: 168">
-          <a-gltf-model rotation="0 -90 0" position="0 -0.3 0" scale="0.6 0.6 0.6" src="#glassesModel2" class="glasses2-entity" visible="false"></a-gltf-model>
+        <a-entity mindar-face-target="anchorIndex: 1">
+          <a-gltf-model position="0 0 0.03" scale="0.012 0.012 0.012" src="#glassesModel2" class="glasses2-entity" visible="false"></a-gltf-model>
         </a-entity>
+        <!-- Earrings: left/right earlobes -->
         <a-entity mindar-face-target="anchorIndex: 127">
-          <a-gltf-model rotation="-0.1 -0 0" position="0 -0.3 -0.3" scale="0.05 0.05 0.05" src="#earringModel" class="earring-entity" visible="false"></a-gltf-model>
+          <a-gltf-model position="0 0 0" scale="0.05 0.05 0.05" src="#earringModel" class="earring-entity" visible="false"></a-gltf-model>
         </a-entity>
         <a-entity mindar-face-target="anchorIndex: 356">
-          <a-gltf-model rotation="0.1 -0 0" position="0 -0.3 -0.3" scale="0.05 0.05 0.05" src="#earringModel" class="earring-entity" visible="false"></a-gltf-model>
+          <a-gltf-model position="0 0 0" scale="0.05 0.05 0.05" src="#earringModel" class="earring-entity" visible="false"></a-gltf-model>
         </a-entity>
       </a-scene>
     </div>
@@ -136,11 +134,9 @@
             setVisible(button, entities, visibles[index]);
           });
         });
-
         // Camera switch functionality
         document.getElementById("switchCamBtn").addEventListener("click", function() {
           const sceneEl = document.querySelector('a-scene');
-          // MindAR face - need to call system
           const arSystem = sceneEl.systems["mindar-face-system"];
           if (arSystem && typeof arSystem.switchCamera === "function") {
             arSystem.switchCamera();
