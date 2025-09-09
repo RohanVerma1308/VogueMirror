@@ -8,7 +8,10 @@
       document.addEventListener("DOMContentLoaded", function() {
         const list = ["glasses1", "glasses2", "hat1", "hat2", "earring"];
         const visibles = [true, false, false, true, true];
-        let currentCamera = 'user'; // 'user' for front camera, 'environment' for back camera
+        
+        // Get camera setting from URL parameter or default to front
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentCamera = urlParams.get('camera') || 'user';
         
         const setVisible = (button, entities, visible) => {
           if (visible) {
@@ -32,37 +35,49 @@
           });
         });
         
-        // Camera switch functionality
+        // Set up camera button
         const cameraButton = document.querySelector("#camera-switch");
-        const scene = document.querySelector("a-scene");
         
-        const switchCamera = async () => {
-          try {
-            // Stop current tracking
-            const arSystem = scene.systems['mindar-face-system'];
-            if (arSystem && arSystem.stop) {
-              await arSystem.stop();
-            }
-            
-            // Toggle camera
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            
-            // Update button text
-            cameraButton.textContent = currentCamera === 'user' ? '📷' : '🤳';
-            cameraButton.title = currentCamera === 'user' ? 'Switch to Back Camera' : 'Switch to Front Camera';
-            
-            // Restart with new camera
-            scene.setAttribute('mindar-face', 'facingMode: ' + currentCamera);
-            
-            if (arSystem && arSystem.start) {
-              await arSystem.start();
-            }
-          } catch (error) {
-            console.warn('Camera switch failed:', error);
-          }
+        // Update button appearance based on current camera
+        const updateCameraButton = () => {
+          cameraButton.textContent = currentCamera === 'user' ? '📷' : '🤳';
+          cameraButton.title = currentCamera === 'user' ? 'Switch to Back Camera' : 'Switch to Front Camera';
+        };
+        
+        updateCameraButton();
+        
+        // Camera switching with page reload (most reliable method)
+        const switchCamera = () => {
+          const newCamera = currentCamera === 'user' ? 'environment' : 'user';
+          
+          // Show loading state
+          cameraButton.disabled = true;
+          cameraButton.style.opacity = '0.5';
+          cameraButton.textContent = '⏳';
+          
+          // Create URL with camera parameter
+          const url = new URL(window.location.href);
+          url.searchParams.set('camera', newCamera);
+          
+          // Reload page with new camera
+          window.location.href = url.toString();
         };
         
         cameraButton.addEventListener('click', switchCamera);
+        
+        // Initialize MindAR scene with correct camera
+        const scene = document.querySelector("a-scene");
+        
+        // Wait for scene to load, then set camera
+        scene.addEventListener('loaded', () => {
+          console.log('Scene loaded, setting camera to:', currentCamera);
+          scene.setAttribute('mindar-face', {
+            facingMode: currentCamera
+          });
+        });
+        
+        // Fallback: set attribute immediately
+        scene.setAttribute('mindar-face', `facingMode: ${currentCamera}`);
         
         // Prevent zoom on double tap (iOS Safari)
         document.addEventListener('touchstart', function(event) {
@@ -79,6 +94,27 @@
           }
           lastTouchEnd = now;
         }, false);
+        
+        // Debug camera access
+        const checkCameraAccess = async () => {
+          try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            console.log('Available cameras:', videoDevices.length);
+            videoDevices.forEach((device, index) => {
+              console.log(`Camera ${index + 1}:`, device.label || `Camera ${index + 1}`);
+            });
+            
+            if (videoDevices.length < 2) {
+              console.warn('Only one camera detected. Back camera switching may not work.');
+            }
+          } catch (error) {
+            console.error('Error checking camera access:', error);
+          }
+        };
+        
+        // Check camera access after permissions are granted
+        setTimeout(checkCameraAccess, 2000);
       });
     </script>
     <style>
@@ -269,7 +305,6 @@
       </div>
       
       <a-scene 
-        mindar-face="facingMode: user" 
         embedded 
         color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights" 
